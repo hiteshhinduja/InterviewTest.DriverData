@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using InterviewTest.DriverData.Entities;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace InterviewTest.DriverData.Analysers
@@ -6,6 +7,7 @@ namespace InterviewTest.DriverData.Analysers
 	// BONUS: Why internal?
 	internal class FriendlyAnalyser : IAnalyser
 	{
+        public AnalyserConfiguration AnalyserConfiguration { get; set; }
 		public HistoryAnalysis Analyse(IReadOnlyCollection<Period> history)
 		{
 			return new HistoryAnalysis

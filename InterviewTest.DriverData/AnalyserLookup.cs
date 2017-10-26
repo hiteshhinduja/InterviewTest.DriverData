@@ -1,5 +1,6 @@
 using System;
 using InterviewTest.DriverData.Analysers;
+using InterviewTest.DriverData.Entities;
 
 namespace InterviewTest.DriverData
 {
@@ -9,6 +10,8 @@ namespace InterviewTest.DriverData
 		{
 			switch (type)
 			{
+                case "delivery":
+                    return new DeliveryDriverAnalyser(new AnalyserConfiguration() { StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(17, 0, 0), MaxSpeed = 30m, RatingForExceedingMaxSpeed = 0 });
 				case "friendly":
 					return new FriendlyAnalyser();
 

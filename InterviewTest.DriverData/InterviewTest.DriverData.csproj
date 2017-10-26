@@ -47,6 +47,9 @@
     <Compile Include="Analysers\GetawayDriverAnalyser.cs" />
     <Compile Include="Analysers\IAnalyser.cs" />
     <Compile Include="CannedData.cs" />
+    <Compile Include="Entities\AnalyserConfiguration.cs" />
+    <Compile Include="Entities\Result.cs" />
+    <Compile Include="Helpers\RatingCalculator.cs" />
     <Compile Include="HistoryAnalysis.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Period.cs" />
