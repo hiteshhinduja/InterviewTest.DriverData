@@ -178,5 +178,35 @@ namespace InterviewTest.DriverData.UnitTests.Analysers
             Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating).Within(0.001m));
             Assert.That(actualResult.DriverRatingAfterPenalty, Is.EqualTo(expectedResult.DriverRatingAfterPenalty).Within(0.001m));
         }
+
+        [Test]
+        public void ForSinglePeriodHavingSameStartAndEndTime_ShouldThrowDivideByZeroException()
+        {
+            //Arrange
+
+            //Act & Assert
+            var actualResult = Assert.Throws<DivideByZeroException>(() => analyser.Analyse(CannedDrivingData.FormulaOneDriverDataWithSinglePeriodHavingSameStartAndEndTime));
+        }
+
+        [Test]
+        public void WhenAnalyserConfigurationIsSetToNull_ShouldYieldZeroRating()
+        {
+            //Arrange
+            var expectedResult = new HistoryAnalysis
+            {
+                AnalysedDuration = new TimeSpan(0, 0, 0),
+                DriverRating = 0m,
+                DriverRatingAfterPenalty = 0m
+            };
+            analyser.AnalyserConfiguration = null;
+
+            //Act
+            var actualResult = analyser.Analyse(CannedDrivingData.History);
+
+            //Assert
+            Assert.That(actualResult.AnalysedDuration, Is.EqualTo(expectedResult.AnalysedDuration));
+            Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating));
+            Assert.That(actualResult.DriverRatingAfterPenalty, Is.EqualTo(expectedResult.DriverRatingAfterPenalty));
+        }
     }
 }
