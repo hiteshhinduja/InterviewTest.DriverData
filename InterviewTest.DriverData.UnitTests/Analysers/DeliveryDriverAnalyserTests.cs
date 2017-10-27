@@ -2,6 +2,9 @@
 using InterviewTest.DriverData.Analysers;
 using NUnit.Framework;
 using InterviewTest.DriverData.Entities;
+using System.IO;
+using System.Configuration;
+using InterviewTest.DriverData.Helpers;
 
 namespace InterviewTest.DriverData.UnitTests.Analysers
 {
@@ -182,6 +185,34 @@ namespace InterviewTest.DriverData.UnitTests.Analysers
             Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating).Within(0.001m));
             Assert.That(actualResult.DriverRatingAfterPenalty, Is.EqualTo(expectedResult.DriverRatingAfterPenalty).Within(0.001m));
             Assert.AreEqual(actualResult.DriverRating, actualResult.DriverRatingAfterPenalty);
+        }
+
+        [Test]
+        public void WhenValidHistoryDataIsLoadedFromCsvFile_ShouldYieldCorrectValues()
+        {
+            //Arrange
+            var expectedResult = new HistoryAnalysis
+            {
+                AnalysedDuration = new TimeSpan(7, 45, 0),
+                DriverRating = 0.7638m,
+                DriverRatingAfterPenalty = 0.3819m
+            };
+            var fileName = "History.csv";
+            //Get the path of directory in which data files are kept from the configuration file
+            //Combine the directory path with the file name
+            string path = Path.Combine(ConfigurationManager.AppSettings["CannedDataDirectoryPath"], fileName);
+            var reader = ContentReaderLookup.GetContentReader();
+            var content = reader.ReadData(path);
+            var parser = DataParserLookup.GetParser("Csv");
+            var data = parser.ParseData(content);
+
+            //Act
+            var actualResult = analyser.Analyse(data);
+
+            //Assert
+            Assert.That(actualResult.AnalysedDuration, Is.EqualTo(expectedResult.AnalysedDuration));
+            Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating).Within(0.001m));
+            Assert.That(actualResult.DriverRatingAfterPenalty, Is.EqualTo(expectedResult.DriverRatingAfterPenalty).Within(0.001m));
         }
     }
 }

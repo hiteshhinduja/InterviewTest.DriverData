@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using InterviewTest.DriverData;
 using InterviewTest.DriverData.Analysers;
+using System.IO;
+using InterviewTest.DriverData.Helpers;
+using System.Configuration;
 
 namespace InterviewTest.Commands
 {
@@ -11,18 +14,29 @@ namespace InterviewTest.Commands
 		// BONUS: What's great about readonly?
 		private readonly IAnalyser _analyser;
 
-		public AnalyseHistoryCommand(IReadOnlyCollection<string> arguments)
-		{
-			var analysisType = arguments.Single();
+        private readonly string _source;
 
-			_analyser = AnalyserLookup.GetAnalyser(analysisType);
-		}
+        public AnalyseHistoryCommand(IReadOnlyCollection<string> arguments)
+		{
+            //Read the first argument which is analyser type
+            var analysisType = arguments.ElementAt(0);
+            //Read the second argument which is name of the file from which data is to be loaded for anlysis
+            _source = arguments.ElementAt(1);
+            //Get appropriate analyzer instance based on type
+            _analyser = AnalyserLookup.GetAnalyser(analysisType);
+        }
 
 		public void Execute()
 		{
-			var analysis = _analyser.Analyse(CannedDrivingData.History);
+            //Get the path of directory in which data files are kept from the configuration file
+            //Combine the directory path with the file name provided as input
+            string path = Path.Combine(ConfigurationManager.AppSettings["CannedDataDirectoryPath"], _source);
+            var reader = ContentReaderLookup.GetContentReader();
+            var parser = DataParserLookup.GetParser("Csv");
+            var data = parser.ParseData(reader.ReadData(path));
+            var analysis = _analyser.Analyse(data);
 
-			Console.Out.WriteLine($"Analysed period: {analysis.AnalysedDuration:g}");
+            Console.Out.WriteLine($"Analysed period: {analysis.AnalysedDuration:g}");
 			Console.Out.WriteLine($"Driver rating: {analysis.DriverRating:P}");
             Console.Out.WriteLine($"Driver rating after penalty: {analysis.DriverRatingAfterPenalty:P}");
         }
