@@ -13,7 +13,7 @@ namespace InterviewTest.DriverData.UnitTests.Analysers
         [SetUp]
         public void Initialize()
         {
-            analyser = new GetawayDriverAnalyser(new AnalyserConfiguration() { StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(14, 0, 0), MaxSpeed = 80m, RatingForExceedingMaxSpeed = 1 });
+            analyser = new GetawayDriverAnalyser(new AnalyserConfiguration() { StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(14, 0, 0), MaxSpeed = 80m, RatingForExceedingMaxSpeed = 1, PenaltyForFaultyRecording = 0.5m });
         }
 
         [Test]
@@ -140,6 +140,48 @@ namespace InterviewTest.DriverData.UnitTests.Analysers
             //Assert
             Assert.That(actualResult.AnalysedDuration, Is.EqualTo(expectedResult.AnalysedDuration));
             Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating));
+        }
+
+        [Test]
+        public void ForPeriodsWithinPermittedTimeSlotHavingGapsBetweenThem_ShouldYieldRatingWithPenalty()
+        {
+            //Arrange
+            var expectedResult = new HistoryAnalysis
+            {
+                AnalysedDuration = new TimeSpan(0, 35, 0),
+                DriverRating = 0.4770m,
+                DriverRatingAfterPenalty = 0.2385m
+            };
+
+            //Act
+            var actualResult = analyser.Analyse(CannedDrivingData.GetawayDriverDataWithPeriodsWithinPermittedTimeSlotHavingGapsBetweenThem);
+
+            //Assert
+            Assert.That(actualResult.AnalysedDuration, Is.EqualTo(expectedResult.AnalysedDuration));
+            Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating).Within(0.001m));
+            Assert.That(actualResult.DriverRatingAfterPenalty, Is.EqualTo(expectedResult.DriverRatingAfterPenalty).Within(0.001m));
+            Assert.AreNotEqual(actualResult.DriverRating, actualResult.DriverRatingAfterPenalty);
+        }
+
+        [Test]
+        public void ForPeriodsWithinPermittedTimeSlotHavingNoGapsBetweenThem_ShouldYieldRatingWithoutPenalty()
+        {
+            //Arrange
+            var expectedResult = new HistoryAnalysis
+            {
+                AnalysedDuration = TimeSpan.FromHours(1),
+                DriverRating = 0.8083m,
+                DriverRatingAfterPenalty = 0.8083m
+            };
+
+            //Act
+            var actualResult = analyser.Analyse(CannedDrivingData.GetawayDriverDataWithPeriodsWithinPermittedTimeSlotHavingNoGapsBetweenThem);
+
+            //Assert
+            Assert.That(actualResult.AnalysedDuration, Is.EqualTo(expectedResult.AnalysedDuration));
+            Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating).Within(0.001m));
+            Assert.That(actualResult.DriverRatingAfterPenalty, Is.EqualTo(expectedResult.DriverRatingAfterPenalty).Within(0.001m));
+            Assert.AreEqual(actualResult.DriverRating, actualResult.DriverRatingAfterPenalty);
         }
     }
 }

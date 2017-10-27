@@ -122,11 +122,12 @@ namespace InterviewTest.DriverData.Analysers
             //Calculate overall rating for periods considered
             var overallRating = RatingCalculator.CalculateOverallRating(ratings);
 
-            //Return analysis duration (excluding undocumented duration) with overall rating
+            //Return analysis duration (excluding undocumented duration), overall rating and apply penalty if any undocumented periods recorded
             return new HistoryAnalysis
             {
                 AnalysedDuration = ratings.Last().EndTime - ratings.First().StartTime - new TimeSpan(0, (int)unDocumentedDuration, 0),
-                DriverRating = overallRating
+                DriverRating = overallRating,
+                DriverRatingAfterPenalty = unDocumentedDuration > 0 ? overallRating * AnalyserConfiguration.PenaltyForFaultyRecording : overallRating
             };
         }
 	}
