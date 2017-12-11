@@ -6,6 +6,7 @@ using InterviewTest.DriverData.Analysers;
 using System.IO;
 using InterviewTest.DriverData.Helpers;
 using System.Configuration;
+using InterviewTest.DriverData.Entities.Enums;
 
 namespace InterviewTest.Commands
 {
@@ -29,7 +30,7 @@ namespace InterviewTest.Commands
             //Read the second argument which is name of the file from which data is to be loaded for anlysis
             _source = arguments.ElementAt(1);
             //Get appropriate analyzer instance based on type
-            _analyser = AnalyserLookup.GetAnalyser(analysisType);
+            _analyser = AnalyserLookup.GetAnalyser((AnalyserType)Enum.Parse(typeof(AnalyserType), analysisType));
         }
 
 		public void Execute()
@@ -38,7 +39,7 @@ namespace InterviewTest.Commands
             //Combine the directory path with the file name provided as input
             string path = Path.Combine(ConfigurationManager.AppSettings["CannedDataDirectoryPath"], _source);
             var reader = ContentReaderLookup.GetContentReader();
-            var parser = DataParserLookup.GetParser("Csv");
+            var parser = DataParserLookup.GetParser(ParserType.Csv);
             var data = parser.ParseData(reader.ReadData(path));
             var analysis = _analyser.Analyse(data);
 

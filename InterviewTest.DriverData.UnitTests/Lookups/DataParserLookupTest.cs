@@ -1,4 +1,5 @@
-﻿using InterviewTest.DriverData.Helpers;
+﻿using InterviewTest.DriverData.Entities.Enums;
+using InterviewTest.DriverData.Helpers;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace InterviewTest.DriverData.UnitTests.Lookups
         public void ShouldCreateCsvDataReaderInstance()
         {
             //Arrange
-            var parserType = "Csv";
+            var parserType = ParserType.Csv;
 
             //Act
             var parserInstance = DataParserLookup.GetParser(parserType);
@@ -25,12 +26,10 @@ namespace InterviewTest.DriverData.UnitTests.Lookups
         }
 
         [Test]
-        public void ShouldThrowArgumentOutOfRangeException()
+        public void ForInvalidParserType_ShouldThrowArgumentException()
         {
-            //Arrange
-            var parserType = "SomeOtherParser";
-            //Act & Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => DataParserLookup.GetParser(parserType));
+            var exception = Assert.Throws<ArgumentException>
+                            (() => DataParserLookup.GetParser((ParserType)Enum.Parse(typeof(ParserType), "SomeOtherParser")));
         }
     }
 }

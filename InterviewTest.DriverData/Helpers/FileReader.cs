@@ -10,17 +10,20 @@ namespace InterviewTest.DriverData.Helpers
 {
     public class FileReader : IContentReader
     {
+        /// <summary>
+        /// Reads data from the file if available at given source
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns>File data in string</returns>
         public string ReadData(string source)
         {
             try
             {
-                //Read file content from source
                 var content = File.ReadAllText(source);
                 return content;
             }
             catch (Exception ex)
             {
-                //Throw the exception if any error occurs while reading the file.
                 throw new Exception($"Error occurred while reading the file {source}. {ex.Message}");
             }
         }

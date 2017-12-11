@@ -1,4 +1,5 @@
-﻿using InterviewTest.DriverData.Helpers.Interfaces;
+﻿using InterviewTest.DriverData.Entities.Enums;
+using InterviewTest.DriverData.Helpers.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,11 +10,17 @@ namespace InterviewTest.DriverData.Helpers
 {
     public static class DataParserLookup
     {
-        private static Dictionary<string, Func<ICannedDataParser>> parsers = new Dictionary<string, Func<ICannedDataParser>>()
+        private static Dictionary<ParserType, Func<ICannedDataParser>> parsers = new Dictionary<ParserType, Func<ICannedDataParser>>()
         {
-            {"Csv", () => {return new CsvDataParser(); } }
+            {ParserType.Csv, () => {return new CsvDataParser(); } }
         };
-        public static ICannedDataParser GetParser(string type)
+
+        /// <summary>
+        /// Gets the appropriate data parser based on given type
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static ICannedDataParser GetParser(ParserType type)
         {
             if (parsers.ContainsKey(type))
             {

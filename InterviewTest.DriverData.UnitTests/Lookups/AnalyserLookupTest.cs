@@ -1,4 +1,5 @@
 ﻿using InterviewTest.DriverData.Analysers;
+using InterviewTest.DriverData.Entities.Enums;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace InterviewTest.DriverData.UnitTests.Lookups
         public void ShouldCreateDeliveryDriverAnalyserInstance()
         {
             //Arrange
-            var analyserType = "Delivery";
+            var analyserType = AnalyserType.Delivery;
             //Act
             var analyserInstance = AnalyserLookup.GetAnalyser(analyserType);
             //Assert
@@ -26,7 +27,7 @@ namespace InterviewTest.DriverData.UnitTests.Lookups
         public void ShouldCreateFormulaOneDriverAnalyserInstance()
         {
             //Arrange
-            var analyserType = "FormulaOne";
+            var analyserType = AnalyserType.FormulaOne;
             //Act
             var analyserInstance = AnalyserLookup.GetAnalyser(analyserType);
             //Assert
@@ -37,7 +38,7 @@ namespace InterviewTest.DriverData.UnitTests.Lookups
         public void ShouldCreateGetawayDriverAnalyserInstance()
         {
             //Arrange
-            var analyserType = "Getaway";
+            var analyserType = AnalyserType.Getaway;
             //Act
             var analyserInstance = AnalyserLookup.GetAnalyser(analyserType);
             //Assert
@@ -48,7 +49,7 @@ namespace InterviewTest.DriverData.UnitTests.Lookups
         public void ShouldCreateFriendlyAnalyserInstance()
         {
             //Arrange
-            var analyserType = "Friendly";
+            var analyserType = AnalyserType.Friendly;
             //Act
             var analyserInstance = AnalyserLookup.GetAnalyser(analyserType);
             //Assert
@@ -56,12 +57,24 @@ namespace InterviewTest.DriverData.UnitTests.Lookups
         }
 
         [Test]
-        public void ShouldThrowArgumentOutOfRangeException()
+        public void ShouldCreateInstancesForAllSupportedTypes()
         {
             //Arrange
-            var analyserType = "SomeOtherDriver";
+            var supportedAnalyserTypes = Enum.GetValues(typeof(AnalyserType));
+
             //Act & Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => AnalyserLookup.GetAnalyser(analyserType));
+            foreach (var value in supportedAnalyserTypes)
+            {
+                var analyser = AnalyserLookup.GetAnalyser((AnalyserType)value);
+                Assert.IsNotNull(analyser);
+            }
+        }
+
+        [Test]
+        public void ForInvalidAnalyserType_ShouldThrowArgumentException()
+        {
+            var exception = Assert.Throws<ArgumentException>
+                            (() => AnalyserLookup.GetAnalyser((AnalyserType)Enum.Parse(typeof(AnalyserType), "SomeOtherAnalyser")));
         }
     }
 }

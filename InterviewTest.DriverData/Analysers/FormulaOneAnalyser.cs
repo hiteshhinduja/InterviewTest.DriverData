@@ -1,5 +1,6 @@
 ﻿using InterviewTest.DriverData.Entities;
 using InterviewTest.DriverData.Helpers;
+using InterviewTest.DriverData.Helpers.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,99 +14,90 @@ namespace InterviewTest.DriverData.Analysers
      * be modified outside the application. Where as the interface IAnalyser is kept public which can be extended.
      * This refers to Open-Closed Principle: A class should be open for extension and closed for modification.
     */
-    internal class FormulaOneAnalyser : IAnalyser
+    internal class FormulaOneAnalyser : DriverAnalyser, IAnalyser
 	{
-        public AnalyserConfiguration AnalyserConfiguration { get; set; }
-
-        public FormulaOneAnalyser(AnalyserConfiguration _analysisConfiguration)
+        private readonly AnalyserConfiguration _analyserConfiguration;
+        private readonly IPeriodRatingCalculator _periodRatingCalculator;
+        public FormulaOneAnalyser(AnalyserConfiguration analyserConfiguration, IPeriodRatingCalculator periodRatingCalculator, IRatingCalculator ratingCalculator)
+            :base(analyserConfiguration, periodRatingCalculator, ratingCalculator)
         {
-            AnalyserConfiguration = _analysisConfiguration;
+            _analyserConfiguration = analyserConfiguration;
+            _periodRatingCalculator = periodRatingCalculator;
         }
 
         public HistoryAnalysis Analyse(IReadOnlyCollection<Period> history)
 		{
-            List<Result> ratings = new List<Result>();
-
-            Result result;
-            double unDocumentedDuration = 0;
-            double duration = 0;
-            decimal rating = 0;
-
-            //Return 0 duration and 0 rating if no periods available or if configuration is not set
-            if (AnalyserConfiguration == null || history == null || history.Count == 0)
+            //Initialize default analysis result
+            var analysisResult = new HistoryAnalysis
             {
-                return new HistoryAnalysis
+                AnalysedDuration = new TimeSpan(0, 0, 0),
+                DriverRating = 0
+            };
 
-                {
-                    AnalysedDuration = new TimeSpan(0, 0, 0),
-                    DriverRating = 0
-                };
+            if (IsValidInput(history))
+            {
+                var validPeriods = GetValidPeriods(history.OrderBy(x => x.Start));
+                var analysedPeriods = AnalysePeriods(validPeriods);
+                analysedPeriods = analysedPeriods.Concat(AnalyzeUndocumentedPeriods(validPeriods));
+                ComputeOverallResult(analysisResult, analysedPeriods.OrderBy(p => p.StartTime));
             }
+            return analysisResult;
+        }
 
-            //Sort the given list of periods in the ascending order of start time
-            history = history.OrderBy(x => x.Start).ToArray();
-            var entriesToConsider = history.ToList();
-            //Take the index of record with first non zero average speed
-            var begin = entriesToConsider.IndexOf(history.FirstOrDefault(x => x.AverageSpeed > 0));
-            //Take the index of record with last non zero average speed
-            var end = entriesToConsider.IndexOf(history.LastOrDefault(x => x.AverageSpeed > 0));
+        /// <summary>
+        /// Ignores everything before first and after the last period with non-zero average speed
+        /// </summary>
+        /// <param name="history"></param>
+        /// <returns></returns>
+        protected override IEnumerable<Period> GetValidPeriods(IEnumerable<Period> history)
+        {
+            return base.TrimPeriodsHavingZeroAverageSpeed(history);
+        }
 
-            //Check if there is any period with non zero average speed, if yes then proceed to calculate duration and ratings
-            if (begin != -1)
+        /// <summary>
+        /// Determines duration and rating for each period
+        /// </summary>
+        /// <param name="validPeriods"></param>
+        /// <returns></returns>
+        protected override IEnumerable<PeriodAnalysisResult> AnalysePeriods(IEnumerable<Period> validPeriods)
+        {
+            var analysedPeriods = new List<PeriodAnalysisResult>();
+
+            foreach (var period in validPeriods)
             {
-                //Calculate the duration and ratings for periods that fall between (and including) first and last records with non zero average speeds
-                for (int i = begin; i <= end; i++)
+                var result = new PeriodAnalysisResult
                 {
-                    //For intermediate records, Check for the gaps between current record's start time and previous record's end time
-                    //If there is a gap, then calculate undocumented period and rating
-                    if (i > begin && history.ElementAt(i).Start > history.ElementAt(i - 1).End)
-                    {
-                        duration = (history.ElementAt(i).Start - history.ElementAt(i - 1).End).TotalMinutes;
+                    StartTime = period.Start.TimeOfDay,
+                    EndTime = period.End.TimeOfDay
+                };
+                //Get the duration for the current result set
+                result.Duration = (decimal)(result.EndTime - result.StartTime).TotalMinutes;
+                result.Rating = _periodRatingCalculator.CalculatePeriodRating(period, _analyserConfiguration);
+                analysedPeriods.Add(result);
+            }
+            return analysedPeriods.OrderBy(x => x.StartTime);
+        }
 
-                        unDocumentedDuration += duration;
-
-                        ratings.Add(new Result() { StartTime = history.ElementAt(i - 1).End.TimeOfDay, EndTime = history.ElementAt(i).Start.TimeOfDay, Duration = (decimal)duration, Rating = 0 });
-                    }
-
-                    //Check if average speed is greater than maximum permitted speed.
-                    //If yes, then assign rating configured for exceeding maximum speed
-                    //If no, then calculate the rating by linearly mapping the average speeds between 0 and maximum speed to 0-1
-                    rating = (history.ElementAt(i).AverageSpeed > AnalyserConfiguration.MaxSpeed) ? AnalyserConfiguration.RatingForExceedingMaxSpeed : (history.ElementAt(i).AverageSpeed / AnalyserConfiguration.MaxSpeed);
-
-                    //Create result set containing Start and End time along with calculated rating
-                    result = new Result() { StartTime = history.ElementAt(i).Start.TimeOfDay, EndTime = history.ElementAt(i).End.TimeOfDay, Rating = rating };
-
-                    //Get the duration for the current result set
-                    result.Duration = (decimal)(result.EndTime - result.StartTime).TotalMinutes;
-
-                    ratings.Add(result);
+        
+        /// <summary>
+        /// Identifies gaps between periods, determines duration and rating for all such undocumented periods
+        /// </summary>
+        /// <param name="validPeriods"></param>
+        /// <returns></returns>
+        protected override IEnumerable<PeriodAnalysisResult> AnalyzeUndocumentedPeriods(IEnumerable<Period> validPeriods)
+        {
+            var undocumentedPeriodResults = new List<PeriodAnalysisResult>();
+            for (int i = 1; i < validPeriods.Count(); i++)
+            {
+                //For intermediate records, Check for the gaps between current record's start time and previous record's end time
+                //If there is a gap, then calculate undocumented period and rating
+                if (validPeriods.ElementAt(i).Start.TimeOfDay > _analyserConfiguration.StartTime && validPeriods.ElementAt(i).Start.TimeOfDay > validPeriods.ElementAt(i - 1).End.TimeOfDay)
+                {
+                    var duration = (validPeriods.ElementAt(i).Start.TimeOfDay - validPeriods.ElementAt(i - 1).End.TimeOfDay).TotalMinutes;
+                    undocumentedPeriodResults.Add(new PeriodAnalysisResult() { StartTime = validPeriods.ElementAt(i - 1).End.TimeOfDay, EndTime = validPeriods.ElementAt(i).Start.TimeOfDay, Duration = (decimal)duration, Rating = _analyserConfiguration.RatingForUndocumentedPeriods, IsUndocumented = true });
                 }
             }
-
-            //If no period is considered valid during analysis, return 0 duration and 0 rating
-            if (!ratings.Any())
-            {
-                return new HistoryAnalysis
-
-                {
-                    AnalysedDuration = new TimeSpan(0, 0, 0),
-                    DriverRating = 0
-                };
-            }
-
-            //Sort the rating resultsets in ascending order of start time
-            ratings = ratings.OrderBy(x => x.StartTime).ToList();
-
-            //Calculate overall rating for periods considered
-            var overallRating = RatingCalculator.CalculateOverallRating(ratings);
-
-            //Return analysis duration (excluding undocumented duration), overall rating and apply penalty if any undocumented periods recorded
-            return new HistoryAnalysis
-            {
-                AnalysedDuration = ratings.Last().EndTime - ratings.First().StartTime - new TimeSpan(0, (int)unDocumentedDuration, 0),
-                DriverRating = overallRating,
-                DriverRatingAfterPenalty = unDocumentedDuration > 0 ? overallRating * AnalyserConfiguration.PenaltyForFaultyRecording : overallRating
-            };
+            return undocumentedPeriodResults;
         }
-	}
+    }
 }

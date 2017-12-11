@@ -10,19 +10,21 @@ namespace InterviewTest.DriverData.Helpers
 {
     public class CsvDataParser : ICannedDataParser
     {
+        /// <summary>
+        /// Parses the given csv data in string format into list of periods
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public List<Period> ParseData(string data)
         {
             List<Period> listOfPeriods = new List<Period>();
 
             try
             {
-                //Read the data into streamreader
                 using (var reader = GenerateStreamFromString(data))
                 {
-                    //Read line by line till the end of file is reached
                     while (!reader.EndOfStream)
                     {
-                        //Read current line
                         var line = reader.ReadLine();
                         //Split the line with comma(,) since the .csv format uses comma as separator for different values.
                         var values = line.Split(',');
@@ -34,15 +36,12 @@ namespace InterviewTest.DriverData.Helpers
                         //Read the third value which is the Average speed for that period
                         period.AverageSpeed = Convert.ToDecimal(values[2]);
 
-                        //Add this period to the data list
                         listOfPeriods.Add(period);
                     }
                 }
             }
-            //Catch the exception (if any) occurred while loading the data from file
             catch (Exception ex)
             {
-                //Throw the exception if any error occurs while parsing.
                 throw new Exception($"Error occurred while parsing the data. {ex.Message}");
             }
 

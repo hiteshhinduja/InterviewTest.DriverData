@@ -5,6 +5,7 @@ using InterviewTest.DriverData.Entities;
 using System.IO;
 using System.Configuration;
 using InterviewTest.DriverData.Helpers;
+using InterviewTest.DriverData.Helpers.Interfaces;
 
 namespace InterviewTest.DriverData.UnitTests.Analysers
 {
@@ -12,11 +13,22 @@ namespace InterviewTest.DriverData.UnitTests.Analysers
 	public class GetawayDriverAnalyserTests
 	{
         private GetawayDriverAnalyser analyser;
+        private readonly AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration
+        {
+            StartTime = new TimeSpan(13, 0, 0),
+            EndTime = new TimeSpan(14, 0, 0),
+            MaxSpeed = 80m,
+            RatingForExceedingMaxSpeed = 1,
+            PenaltyForFaultyRecording = 0.5m,
+            RatingForUndocumentedPeriods = 0
+        };
+        private IPeriodRatingCalculator periodRatingCalculator = new LinearSpeedRatingCalculator();
+        private IRatingCalculator ratingCalculator = new WeightedRatingCalculator();
 
         [SetUp]
         public void Initialize()
         {
-            analyser = new GetawayDriverAnalyser(new AnalyserConfiguration() { StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(14, 0, 0), MaxSpeed = 80m, RatingForExceedingMaxSpeed = 1, PenaltyForFaultyRecording = 0.5m });
+            analyser = new GetawayDriverAnalyser(analyserConfiguration, periodRatingCalculator, ratingCalculator);
         }
 
         [Test]
@@ -203,7 +215,7 @@ namespace InterviewTest.DriverData.UnitTests.Analysers
             string path = Path.Combine(ConfigurationManager.AppSettings["CannedDataDirectoryPath"], fileName);
             var reader = ContentReaderLookup.GetContentReader();
             var content = reader.ReadData(path);
-            var parser = DataParserLookup.GetParser("Csv");
+            var parser = DataParserLookup.GetParser(Entities.Enums.ParserType.Csv);
             var data = parser.ParseData(content);
 
             //Act
@@ -228,27 +240,6 @@ namespace InterviewTest.DriverData.UnitTests.Analysers
 
             //Act
             var actualResult = analyser.Analyse(CannedDrivingData.GetawayDriverDataWithSinglePeriodWithinPermittedTimeSlotHavingSameStartAndEndTime);
-
-            //Assert
-            Assert.That(actualResult.AnalysedDuration, Is.EqualTo(expectedResult.AnalysedDuration));
-            Assert.That(actualResult.DriverRating, Is.EqualTo(expectedResult.DriverRating));
-            Assert.That(actualResult.DriverRatingAfterPenalty, Is.EqualTo(expectedResult.DriverRatingAfterPenalty));
-        }
-
-        [Test]
-        public void WhenAnalyserConfigurationIsSetToNull_ShouldYieldZeroRating()
-        {
-            //Arrange
-            var expectedResult = new HistoryAnalysis
-            {
-                AnalysedDuration = new TimeSpan(0, 0, 0),
-                DriverRating = 0m,
-                DriverRatingAfterPenalty = 0m
-            };
-            analyser.AnalyserConfiguration = null;
-
-            //Act
-            var actualResult = analyser.Analyse(CannedDrivingData.History);
 
             //Assert
             Assert.That(actualResult.AnalysedDuration, Is.EqualTo(expectedResult.AnalysedDuration));
